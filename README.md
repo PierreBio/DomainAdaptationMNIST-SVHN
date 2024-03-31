@@ -11,7 +11,7 @@ Train a DNN (you can choose which one) using MNIST and then apply it on SVHN dat
 
 In pairs, you are tasked with developing a solution to address the challenge of domain adaptation between two distinct image datasets: MNIST and SVHN. Specifically, you will focus on adapting a deep neural network (DNN) trained on the labeled MNIST dataset to perform accurately on the SVHN dataset, for which you are provided with images but no labels during training. Your ultimate goal is to demonstrate effective domain adaptation by achieving high accuracy on the SVHN test set.
 
-Deliverables
+### Deliverables
 
 - Adapted DNN Model: A deep neural network model that has been successfully adapted from MNIST to perform well on the SVHN dataset.
 
