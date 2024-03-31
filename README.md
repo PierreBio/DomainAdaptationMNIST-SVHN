@@ -7,7 +7,7 @@ This project is carried out in the context of the Artificial Intelligence Master
 
 ## Project
 
-Project to train a DNN using MNIST and then apply it on SVHN data using domain adaptation technique.
+Train a DNN (you can choose which one) using MNIST and then apply it on SVHN data using domain adaptation technique.
 
 In pairs, you are tasked with developing a solution to address the challenge of domain adaptation between two distinct image datasets: MNIST and SVHN. Specifically, you will focus on adapting a deep neural network (DNN) trained on the labeled MNIST dataset to perform accurately on the SVHN dataset, for which you are provided with images but no labels during training. Your ultimate goal is to demonstrate effective domain adaptation by achieving high accuracy on the SVHN test set.
 
@@ -47,6 +47,12 @@ py -m venv venv
 
 ```
 pip install -r requirements.txt
+```
+
+- If you have CUDA installed on your computer, you can install a specific torch version:
+
+```
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ## How to launch?
