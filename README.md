@@ -1,8 +1,7 @@
 # Domain Adaptation for MNIST/SVHN
+![logo_domain_adaptation](https://github.com/PierreBio/AdaptationDomain/assets/45881846/be12002b-1c55-47da-93a2-9fafe67c0aad)
 
 This project is carried out in the context of the Artificial Intelligence Masters of **TelecomParis**.
-
-![logo_domain_adaptation](https://github.com/PierreBio/AdaptationDomain/assets/45881846/be12002b-1c55-47da-93a2-9fafe67c0aad)
 
 <sub>Made with __Python v3.11__</sub>
 
