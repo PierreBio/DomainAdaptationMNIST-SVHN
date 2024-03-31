@@ -13,8 +13,13 @@ def load_data():
     """
     # MNIST: Training and Test sets
     mnist_transform = transforms.Compose([
+        transforms.Resize(32),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
 
     mnist_path = './data/MNIST'
@@ -36,9 +41,9 @@ def load_data():
     svhn_test = datasets.SVHN(root='./data', split='test', download=True, transform=svhn_transform)
 
     # Data loaders
-    mnist_train_loader = DataLoader(mnist_train, batch_size=64, shuffle=True)
-    mnist_test_loader = DataLoader(mnist_test, batch_size=64, shuffle=False)
-    svhn_train_loader = DataLoader(svhn_train, batch_size=64, shuffle=True)
-    svhn_test_loader = DataLoader(svhn_test, batch_size=64, shuffle=False)
+    mnist_train_loader = DataLoader(mnist_train, batch_size=64, shuffle=True, drop_last=True)
+    mnist_test_loader = DataLoader(mnist_test, batch_size=64, shuffle=False, drop_last=True)
+    svhn_train_loader = DataLoader(svhn_train, batch_size=64, shuffle=True, drop_last=True)
+    svhn_test_loader = DataLoader(svhn_test, batch_size=64, shuffle=False, drop_last=True)
 
     return mnist_train_loader, mnist_test_loader, svhn_train_loader, svhn_test_loader
