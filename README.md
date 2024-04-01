@@ -76,3 +76,7 @@ See [our results](docs/RESULTS.md).
 - [MNIST Dataset](http://yann.lecun.com/exdb/mnist/)
 - [SVHN Dataset](http://ufldl.stanford.edu/housenumbers/)
 - [Brief Review of Domain Adaptation](https://arxiv.org/pdf/2010.03978.pdf)
+- [SBADAGAN](https://github.com/engharat/SBADAGAN)
+- [MNIST-to-SVHN](https://github.com/yunjey/mnist-svhn-transfer)
+- [Domain Adaptation on SVHN-to-MNIST](https://paperswithcode.com/sota/domain-adaptation-on-svhn-to-mnist)
+- [Self-Ensembling for visual adaptation](https://pdfs.semanticscholar.org/1a3d/c5420fb73e5746494720f1c5733225a3386b.pdf)
