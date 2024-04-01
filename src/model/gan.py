@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
 
 class Generator(nn.Module):
     def __init__(self, img_channels=3, feature_maps=64):
@@ -91,6 +92,21 @@ class GAN(nn.Module):
                 optimizer_G.step()
 
             print(f'Epoch [{epoch+1}/{num_epochs}], d_loss: {d_loss.item()}, g_loss: {g_loss.item()}')
+
+    def transform_images(self, source_loader):
+        transformed_images = []
+        labels_list = []
+        self.generator.eval()
+        with torch.no_grad():
+            for images, labels in source_loader:
+                images = images.to(self.device)
+                transformed = self.generator(images).cpu()
+                transformed_images.append(transformed)
+                labels_list.append(labels)
+        self.generator.train()
+        transformed_dataset = TensorDataset(torch.cat(transformed_images, dim=0), torch.cat(labels_list, dim=0))
+        transformed_loader = DataLoader(transformed_dataset, batch_size=64, shuffle=True)
+        return transformed_loader
 
 
 class DigitClassifier(nn.Module):
