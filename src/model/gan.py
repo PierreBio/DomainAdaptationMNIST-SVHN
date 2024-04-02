@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
 
 class Generator(nn.Module):
     def __init__(self, img_channels=3, feature_maps=64):
@@ -90,6 +91,59 @@ class GAN(nn.Module):
                 g_loss.backward()
                 optimizer_G.step()
 
-                # Logging pour suivre les progrès
-                if (epoch+1) % 10 == 0:
-                    print(f'Epoch [{epoch+1}/{num_epochs}], d_loss: {d_loss.item()}, g_loss: {g_loss.item()}')
+            print(f'Epoch [{epoch+1}/{num_epochs}], d_loss: {d_loss.item()}, g_loss: {g_loss.item()}')
+
+    def transform_images(self, source_loader):
+        transformed_images = []
+        labels_list = []
+        self.generator.eval()
+        with torch.no_grad():
+            for images, labels in source_loader:
+                images = images.to(self.device)
+                transformed = self.generator(images).cpu()
+                transformed_images.append(transformed)
+                labels_list.append(labels)
+        self.generator.train()
+        transformed_dataset = TensorDataset(torch.cat(transformed_images, dim=0), torch.cat(labels_list, dim=0))
+        transformed_loader = DataLoader(transformed_dataset, batch_size=64, shuffle=True)
+        return transformed_loader
+
+
+class DigitClassifier(nn.Module):
+    def __init__(self, num_classes=10):
+        super(DigitClassifier, self).__init__()
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+        self.fc_layers = nn.Sequential(
+            nn.Linear(64*8*8, 1024),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(1024, num_classes),
+        )
+
+    def forward(self, x):
+        x = self.conv_layers(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc_layers(x)
+        return x
+
+    def train_model(self, classifier, data_loader, device, epochs=10):
+        classifier.train()
+        optimizer = torch.optim.Adam(classifier.parameters(), lr=0.001)
+        criterion = nn.CrossEntropyLoss()
+
+        for epoch in range(epochs):
+            for images, labels in data_loader:
+                images, labels = images.to(device), labels.to(device)
+                optimizer.zero_grad()
+                outputs = classifier(images)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+            print(f'Epoch {epoch+1}, Loss: {loss.item()}')
