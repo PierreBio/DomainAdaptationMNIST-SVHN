@@ -80,3 +80,4 @@ See [our results](docs/RESULTS.md).
 - [MNIST-to-SVHN](https://github.com/yunjey/mnist-svhn-transfer)
 - [Domain Adaptation on SVHN-to-MNIST](https://paperswithcode.com/sota/domain-adaptation-on-svhn-to-mnist)
 - [Self-Ensembling for visual adaptation](https://pdfs.semanticscholar.org/1a3d/c5420fb73e5746494720f1c5733225a3386b.pdf)
+- [Mean Teacher Model](https://arxiv.org/pdf/1703.01780.pdf)
