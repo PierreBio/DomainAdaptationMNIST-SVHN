@@ -20,8 +20,10 @@ class ModelHandler:
             self.model.train_model(source_loader, target_loader, self.device)
             self._evaluate_classifier(self.model, target_test_loader)
         elif isinstance(self.model, MeanTeacher):
-            classifier = self.model.train_model(source_loader, target_loader, source_test_loader, target_test_loader, self.device)
-            self._evaluate_classifier(classifier, target_test_loader)
+            classifier1, classifier2 = self.model.train_model(source_loader, target_loader, source_test_loader, target_test_loader, self.device)
+            self._evaluate_classifier(classifier1, target_test_loader)
+            self._evaluate_classifier(classifier2, target_test_loader)
+            torch.save(classifier2.state_dict(), 'best_model.pth')
 
     def _evaluate_classifier(self, classifier, test_loader):
         evaluate_model(classifier, test_loader, self.device)
