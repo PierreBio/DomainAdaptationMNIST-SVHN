@@ -7,7 +7,6 @@ class ModelHandler:
     def __init__(self, model_type, device):
         self.model = model_factory(model_type).to(device)
         self.device = device
-        print(device)
 
     def train_and_evaluate(self, source_loader, target_loader, source_test_loader, target_test_loader):
         if isinstance(self.model, GAN):

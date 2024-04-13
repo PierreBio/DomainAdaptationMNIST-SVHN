@@ -37,7 +37,7 @@ class MeanTeacher(nn.Module):
             param.requires_grad = False
 
         self.student_optimizer = torch.optim.Adam(student_params, lr=0.001)
-        self.teacher_optimizer = WeightedAverageOptimizer(self.teacher_net, self.student_net, smoothing_factor=False)
+        self.teacher_optimizer = WeightedAverageOptimizer(self.teacher_net, self.student_net, smoothing_factor=0.01)
         self.classification_criterion = nn.CrossEntropyLoss()
 
         print('Training Set: X shape={}, y shape={}'.format(source_data.train_X[:].shape, source_data.train_y[:].shape))
@@ -57,21 +57,18 @@ class MeanTeacher(nn.Module):
         train_iter = train_ds.batch_iterator(batch_size=batch_sz, shuffle=np.random)
 
         best_state, best_mask_rate = {}, 0.0
-        for epoch in range(5):
+        for epoch in range(100):
             t_start = time.time()
             train_res = data_source.batch_map_mean(self.train_function, train_iter, n_batches=n_batches)
             train_loss, unsup_loss, conf_rate, mask_rate = train_res[0], train_res[1], train_res[-2], train_res[-1]
 
             if conf_rate > best_mask_rate:
-                best_mask_rate, improve = conf_rate, '*** '
                 best_state = {k: v.cpu().numpy() for k, v in self.teacher_net.state_dict().items()}
-            else:
-                improve = ''
 
             src_stu_err, src_tea_err = source_test.batch_map_mean(self.evaluate_source_data, batch_size=batch_sz * 2)
             tgt_stu_err, tgt_tea_err = target_test.batch_map_mean(self.evaluate_target_data, batch_size=batch_sz * 2)
 
-            print(f'{improve}Epoch {epoch} took {time.time() - t_start:.2f}s: TRAIN clf loss={train_loss:.6f}, '
+            print(f'Epoch {epoch} took {time.time() - t_start:.2f}s: TRAIN clf loss={train_loss:.6f}, '
                 f'unsup (tgt) loss={unsup_loss:.6f}, conf mask={conf_rate:.3%}, unsup mask={mask_rate:.3%}; '
                 f'SRC TEST ERR={src_stu_err:.3%}, TGT TEST student err={tgt_stu_err:.3%}, TGT TEST teacher err={tgt_tea_err:.3%}')
 
@@ -96,7 +93,7 @@ class MeanTeacher(nn.Module):
         Compute the augmentation loss.
         """
         confidence_teacher = torch.max(teacher_output, 1)[0]
-        confidence_threshold = 0.96837722
+        confidence_threshold = 0.95
 
         unsupervised_mask = confidence_mask = (confidence_teacher > confidence_threshold).float()
         unsupervised_mask_count = confidence_mask_count = confidence_mask.sum()

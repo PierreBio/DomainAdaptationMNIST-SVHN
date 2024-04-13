@@ -7,6 +7,7 @@ def model_factory(model_type, **kwargs):
         return CNN(**kwargs)
     elif model_type == 'gan':
         return GAN(**kwargs)
-    else:
+    elif model_type == 'mean_teacher':
         return MeanTeacher(**kwargs)
+    else:
         raise ValueError("Unknown model type: {}".format(model_type))
