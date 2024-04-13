@@ -65,7 +65,7 @@ py -m src.main
 
 ## Method
 
-See [our explanations](docs/METHOD.md) about the whole method.
+See [our explanations](docs/METHOD.md) about the whole method from [A Tarvainen, Harri Valpola](https://arxiv.org/pdf/1703.01780.pdf).
 
 ## Results
 
