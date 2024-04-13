@@ -17,6 +17,12 @@ In pairs, you are tasked with developing a solution to address the challenge of 
 
 - Brief Report: A concise report that outlines your approach, methods used for domain adaptation, challenges encountered, and a discussion of the model's performance on the SVHN test set. The report should also include the accuracy metrics achieved on the SVHN test set to demonstrate the effectiveness of your domain adaptation strategy.
 
+## Quick try?
+
+Use our Google Collab [link](https://colab.research.google.com/drive/14bF9Vpjt10fGMntJd-akoradIILy_4q4?usp=sharing).
+
+<sub>Note: Collab version can take some time to run due to imports.</sub>
+
 ## How to setup?
 
 - First, clone the repository:
