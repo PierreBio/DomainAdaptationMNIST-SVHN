@@ -93,13 +93,13 @@ class GAN(nn.Module):
 
             print(f'Epoch [{epoch+1}/{num_epochs}], d_loss: {d_loss.item()}, g_loss: {g_loss.item()}')
 
-    def transform_images(self, source_loader):
+    def transform_images(self, source_loader, device):
         transformed_images = []
         labels_list = []
         self.generator.eval()
         with torch.no_grad():
             for images, labels in source_loader:
-                images = images.to(self.device)
+                images = images.to(device)
                 transformed = self.generator(images).cpu()
                 transformed_images.append(transformed)
                 labels_list.append(labels)

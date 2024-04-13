@@ -11,7 +11,7 @@ class ModelHandler:
     def train_and_evaluate(self, source_loader, target_loader, source_test_loader, target_test_loader):
         if isinstance(self.model, GAN):
             self.model.train_model(source_loader, target_loader, self.device)
-            transformed_images = self.model.transform_images(source_loader)
+            transformed_images = self.model.transform_images(source_loader, device=self.device)
             classifier = DigitClassifier().to(self.device)
             classifier.train_model(classifier, transformed_images, self.device)
             self._evaluate_classifier(classifier, target_test_loader)
