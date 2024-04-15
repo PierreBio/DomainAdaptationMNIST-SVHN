@@ -1,8 +1,6 @@
-from batchup import data_source, work_pool
 import torch
 from torch import nn
 from torch.nn import functional as F
-import time
 
 from src.preprocessing.loader import *
 from src.preprocessing.augmentation import *
@@ -22,7 +20,6 @@ class MeanTeacher(nn.Module):
 
     def train_model(self, source_loader, target_loader, source_test_loader, target_test_loader, device):
         self.device = device
-        pool = work_pool.WorkerThreadPool(2)
         source_data = extract_data_and_labels(source_loader, source_test_loader)
         target_data = extract_data_and_labels(target_loader, target_test_loader)
 
@@ -30,51 +27,61 @@ class MeanTeacher(nn.Module):
         self.student_net = ConvolutionalClassifier(nb_classes).to(device)
         self.teacher_net = ConvolutionalClassifier(nb_classes).to(device)
 
-        student_params = list(self.student_net.parameters())
-        teacher_params = list(self.teacher_net.parameters())
-
-        for param in teacher_params:
+        for param in self.teacher_net.parameters():
             param.requires_grad = False
 
-        self.student_optimizer = torch.optim.Adam(student_params, lr=0.001)
+        self.student_optimizer = torch.optim.Adam(self.student_net.parameters(), lr=0.001)
         self.teacher_optimizer = WeightedAverageOptimizer(self.teacher_net, self.student_net, smoothing_factor=0.01)
-        self.classification_criterion = nn.CrossEntropyLoss()
+        self.classification_criterion = torch.nn.CrossEntropyLoss()
 
-        print('Training Set: X shape={}, y shape={}'.format(source_data.train_X[:].shape, source_data.train_y[:].shape))
-        print('Test Set: X shape={}, y shape={}'.format(source_data.test_X[:].shape, source_data.test_y[:].shape))
-        print('TARGET Training Set: X shape={}'.format(target_data.train_X[:].shape))
-        print('TARGET Test Set: X shape={}, y shape={}'.format(target_data.test_X[:].shape, target_data.test_y[:].shape))
+        best_state, best_conf_rate = {}, 0.0
+        batch_size = 256
+        num_epochs = 5
 
-        batch_sz = 256
-        sup_ds = data_source.ArrayDataSource([source_data.train_X, source_data.train_y], repeats=-1)
-        tgt_ds = data_source.ArrayDataSource([target_data.train_X], repeats=-1)
-        train_ds = pool.parallel_data_source(data_source.CompositeDataSource([sup_ds, tgt_ds]).map(self.augment_data))
-        n_batches = target_data.train_X.shape[0] // batch_sz
+        for epoch in range(num_epochs):
+            indices = torch.randperm(len(source_data.train_X))
 
-        source_test = data_source.ArrayDataSource([source_data.test_X, source_data.test_y])
-        target_test = data_source.ArrayDataSource([target_data.test_X, target_data.test_y])
+            total_train_loss, total_unsup_loss, total_conf_rate, total_mask_rate = 0.0, 0.0, 0.0, 0.0
+            total_samples = 0
 
-        train_iter = train_ds.batch_iterator(batch_size=batch_sz, shuffle=np.random)
+            for i in range(0, len(source_data.train_X), batch_size):
+                batch_indices = indices[i:i+batch_size]
 
-        best_state, best_mask_rate = {}, 0.0
-        for epoch in range(2):
-            t_start = time.time()
-            train_res = data_source.batch_map_mean(self.train_function, train_iter, n_batches=n_batches)
-            train_loss, unsup_loss, conf_rate, mask_rate = train_res[0], train_res[1], train_res[-2], train_res[-1]
+                X_source_batch = source_data.train_X[batch_indices]
+                y_source_batch = source_data.train_y[batch_indices]
+                X_target_batch = target_data.train_X[batch_indices]
 
-            if conf_rate > best_mask_rate:
-                best_state = {k: v.cpu().numpy() for k, v in self.teacher_net.state_dict().items()}
+                X_source_aug, y_source_aug, X_target_student, X_target_teacher = self.augment_data(
+                    X_source_batch, y_source_batch, X_target_batch
+                )
 
-            src_stu_err, src_tea_err = source_test.batch_map_mean(self.evaluate_source_data, batch_size=batch_sz * 2)
-            tgt_stu_err, tgt_tea_err = target_test.batch_map_mean(self.evaluate_target_data, batch_size=batch_sz * 2)
+                train_loss, unsup_loss, batch_conf_rate, batch_mask_rate  = self.train_function(
+                    X_source_aug, y_source_aug, X_target_student, X_target_teacher
+                )
 
-            print(f'Epoch {epoch} took {time.time() - t_start:.2f}s: TRAIN clf loss={train_loss:.6f}, '
-                f'unsup (tgt) loss={unsup_loss:.6f}, conf mask={conf_rate:.3%}, unsup mask={mask_rate:.3%}; '
-                f'SRC TEST ERR={src_stu_err:.3%}, TGT TEST student err={tgt_stu_err:.3%}, TGT TEST teacher err={tgt_tea_err:.3%}')
+                batch_samples = len(batch_indices)
+                total_train_loss += train_loss
+                total_unsup_loss += unsup_loss
+                total_conf_rate += batch_conf_rate * batch_samples
+                total_mask_rate += batch_mask_rate * batch_samples
+                total_samples += batch_samples
 
-        self.teacher_net.load_state_dict({k: torch.from_numpy(v) for k, v in best_state.items()})
-        self.teacher_net.eval()
-        self.teacher_net.to(device)
+                if batch_conf_rate > best_conf_rate:
+                    best_conf_rate = batch_conf_rate
+                    best_state = {k: v.clone().detach() for k, v in self.teacher_net.state_dict().items()}
+
+            epoch_train_loss = total_train_loss / total_samples
+            epoch_unsup_loss = total_unsup_loss / total_samples
+            epoch_conf_rate = total_conf_rate / total_samples
+            epoch_mask_rate = total_mask_rate / total_samples
+
+            print(f'Epoch {epoch+1}: Train Loss: {epoch_train_loss:.4f}, Unsup Loss: {epoch_unsup_loss:.4f}, '
+                  f'Conf Rate: {epoch_conf_rate:.4f}, Mask Rate: {epoch_mask_rate:.4f}')
+
+        if best_state is not None:
+            self.teacher_net.load_state_dict(best_state)
+            self.teacher_net.eval()
+
         return self.teacher_net, self.student_net
 
     def augment_data(self, X_source, y_source, X_target):
@@ -145,8 +152,10 @@ class MeanTeacher(nn.Module):
         self.teacher_optimizer.update_parameters()
 
         n_samples = X_source.size()[0]
+        conf_rate = conf_mask_count / n_samples
+        mask_rate = unsup_mask_count / n_samples
 
-        return float(clf_loss) * n_samples, float(unsup_loss) * n_samples
+        return float(clf_loss) * n_samples, float(unsup_loss) * n_samples, conf_rate, mask_rate
 
     def predict_source_data(self, X_source):
         """
@@ -157,34 +166,6 @@ class MeanTeacher(nn.Module):
         self.teacher_net.eval()
         return (F.softmax(self.student_net(X_variable), dim=1).detach().cpu().numpy(),
                 F.softmax(self.teacher_net(X_variable), dim=1).detach().cpu().numpy())
-
-    def predict_target_data(self, X_target):
-        """
-        Predicts the output probabilities for target data.
-        """
-        X_variable = torch.tensor(X_target, dtype=torch.float, device=self.device)
-        self.student_net.eval()
-        self.teacher_net.eval()
-        return (F.softmax(self.student_net(X_variable), dim=1).detach().cpu().numpy(),
-                F.softmax(self.teacher_net(X_variable), dim=1).detach().cpu().numpy())
-
-    def evaluate_source_data(self, X_source, y_source):
-        """
-        Evaluates the performance of the model on source data.
-        """
-        y_pred_prob_student, y_pred_prob_teacher = self.predict_source_data(X_source)
-        y_pred_student = np.argmax(y_pred_prob_student, axis=1)
-        y_pred_teacher = np.argmax(y_pred_prob_teacher, axis=1)
-        return (float((y_pred_student != y_source).sum()), float((y_pred_teacher != y_source).sum()))
-
-    def evaluate_target_data(self, X_target, y_target):
-        """
-        Evaluates the performance of the model on target data.
-        """
-        y_pred_prob_student, y_pred_prob_teacher = self.predict_target_data(X_target)
-        y_pred_student = np.argmax(y_pred_prob_student, axis=1)
-        y_pred_teacher = np.argmax(y_pred_prob_teacher, axis=1)
-        return (float((y_pred_student != y_target).sum()), float((y_pred_teacher != y_target).sum()))
 
     def robust_binary_crossentropy(self, pred, target):
         """
