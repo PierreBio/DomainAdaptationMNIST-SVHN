@@ -53,7 +53,7 @@ class GAN(nn.Module):
         discriminator_result = self.discriminator(generated_image)
         return discriminator_result
 
-    def train_model(self, source_loader, target_loader, device, num_epochs=10, lr_G=0.001, lr_D=0.001):
+    def train_model(self, source_loader, target_loader, device, num_epochs=50, lr_G=0.001, lr_D=0.001):
         """
         Entraîne un modèle GAN pour l'adaptation de domaine.
         """
@@ -133,7 +133,7 @@ class DigitClassifier(nn.Module):
         x = self.fc_layers(x)
         return x
 
-    def train_model(self, classifier, data_loader, device, epochs=10):
+    def train_model(self, classifier, data_loader, device, epochs=5):
         classifier.train()
         optimizer = torch.optim.Adam(classifier.parameters(), lr=0.001)
         criterion = nn.CrossEntropyLoss()

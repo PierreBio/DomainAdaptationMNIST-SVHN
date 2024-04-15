@@ -21,7 +21,7 @@ class CNN(nn.Module):
         x = self.fc2(x)
         return x
 
-    def train_model(self, train_loader, target_loader, device, num_epochs=10, lr=0.001):
+    def train_model(self, train_loader, target_loader, device, num_epochs=50, lr=0.001):
         """
         Train the model on the MNIST dataset.
         """

@@ -57,7 +57,7 @@ class MeanTeacher(nn.Module):
         train_iter = train_ds.batch_iterator(batch_size=batch_sz, shuffle=np.random)
 
         best_state, best_mask_rate = {}, 0.0
-        for epoch in range(100):
+        for epoch in range(2):
             t_start = time.time()
             train_res = data_source.batch_map_mean(self.train_function, train_iter, n_batches=n_batches)
             train_loss, unsup_loss, conf_rate, mask_rate = train_res[0], train_res[1], train_res[-2], train_res[-1]
