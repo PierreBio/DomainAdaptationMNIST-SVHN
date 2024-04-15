@@ -157,16 +157,6 @@ class MeanTeacher(nn.Module):
 
         return float(clf_loss) * n_samples, float(unsup_loss) * n_samples, conf_rate, mask_rate
 
-    def predict_source_data(self, X_source):
-        """
-        Predicts the output probabilities for source data.
-        """
-        X_variable = torch.tensor(X_source, dtype=torch.float, device=self.device)
-        self.student_net.eval()
-        self.teacher_net.eval()
-        return (F.softmax(self.student_net(X_variable), dim=1).detach().cpu().numpy(),
-                F.softmax(self.teacher_net(X_variable), dim=1).detach().cpu().numpy())
-
     def robust_binary_crossentropy(self, pred, target):
         """
         Compute robust binary crossentropy loss.
